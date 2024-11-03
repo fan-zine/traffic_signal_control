@@ -6,8 +6,8 @@ from .traffic_signal import TrafficSignal
 # ts: list of TrafficSignal 
 def construct_graph_representation(ts_list: list[TrafficSignal]):
     # collect traffic signal ids
-    sort_ts_func = lambda ts: ts.ts_id
-    ts_idx = {ts.ts_id: i for i, ts in enumerate(sorted(ts_list, key=sort_ts_func))}
+    sort_ts_func = lambda ts: ts.id
+    ts_idx = {ts.id: i for i, ts in enumerate(sorted(ts_list, key=sort_ts_func))}
 
     # collect all lane ids
     lanes = [ts.lanes + ts.out_lanes for ts in ts_list]
@@ -20,7 +20,7 @@ def construct_graph_representation(ts_list: list[TrafficSignal]):
 
     # fill with additional dummy nodes
     for ts in ts_list:
-        ts_id = ts_idx[ts.ts_id]
+        ts_id = ts_idx[ts.id]
         for in_edge in ts.lanes:
             in_edge_idx = lanes_index[in_edge]
             adj_list[in_edge_idx][1] = ts_id
