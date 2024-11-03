@@ -4,7 +4,7 @@ from .traffic_signal import TrafficSignal
 # create graph representation, with TS nodes, and lanes as nodes
 # return: ts_nodes, lanes, adj_list
 # ts: list of TrafficSignal 
-def construct_graph_representation(ts_list: list[TrafficSignal]):
+def construct_graph_representation(ts_list):
     # collect traffic signal ids
     sort_ts_func = lambda ts: ts.id
     ts_idx = {ts.id: i for i, ts in enumerate(sorted(ts_list, key=sort_ts_func))}
