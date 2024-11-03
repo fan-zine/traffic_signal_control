@@ -43,12 +43,3 @@ def construct_graph_representation(ts_list):
 
     return ts_idx, lanes_index, torch.Tensor(adj_list)
     
-if __name__ == "__main__":
-    a = TrafficSignal("A0", ["A0_0", "A0_1"], ["A1_1", "A1_0", "A1_2"])
-    a2 = TrafficSignal("A1", ["A1_0", "A1_1"], ["A0_0", "A2_0", "A0_1"])
-
-    b,c,d = construct_graph_representation([a,a2])
-
-    print(f"ts_idx: {b}")
-    print(f"lanes_index: {c}")
-    print(f"adj_list: {d}")
