@@ -1,7 +1,7 @@
 import torch
 from ..sumo_rl.environment.traffic_signal import TrafficSignal
 
-def construct_graph_representation(ts_list):
+def construct_graph_representation(ts_list, device):
     '''
     Build graph representation of TrafficSignal traffic system.
     Returns:
@@ -12,6 +12,7 @@ def construct_graph_representation(ts_list):
 
     Args:
         ts_list (list[TrafficSignal]): list of TrafficSignal to build graph representation for.
+        device (str): Type of device for generating Tensor.
     '''
     # collect traffic signal ids
     sort_ts_func = lambda ts: ts.id
@@ -50,4 +51,4 @@ def construct_graph_representation(ts_list):
             next_indx += 1
     num_nodes = next_indx
 
-    return ts_idx, num_nodes, lanes_index, torch.Tensor(adj_list)
+    return ts_idx, num_nodes, lanes_index, torch.Tensor(adj_list, device=device)
