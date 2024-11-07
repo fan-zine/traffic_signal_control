@@ -1,4 +1,4 @@
-
+import numpy as np
 
 def evaluate(env, model, epochs, return_all_rewards):
   '''
