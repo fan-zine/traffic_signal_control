@@ -37,17 +37,17 @@ if __name__ == "__main__":
   print("STEP 1")
   print(f"ts_features: {last_k.ts_features}")
   
-  features = {'ts0': torch.zeros(5), 'ts1': torch.zeros(5), 'ts2': torch.zeros(5)}
+  features = {'ts0': torch.ones(5), 'ts1': torch.ones(5), 'ts2': torch.ones(5)}
   last_k.update(features)
   print("STEP 2")
   print(f"ts_features: {last_k.ts_features}")
   
-  features = {'ts0': torch.ones(5), 'ts1': torch.ones(5), 'ts2': torch.ones(5)}
+  features = {'ts0': torch.full((5,), 2), 'ts1': torch.full((5,), 2), 'ts2': torch.full((5,), 2)}
   last_k.update(features)
   print("STEP 3")
   print(f"ts_features: {last_k.ts_features}")
   
-  features = {'ts0': torch.full(size=(5,),fill_value=2), 'ts1': torch.full(size=(5,),fill_value=2), 'ts2': torch.full(size=(5,),fill_value=2)}
+  features = {'ts0': torch.full((5,), 3), 'ts1': torch.full((5,), 3), 'ts2': torch.full((5,), 3)}
   last_k.update(features)
   print("STEP 4")
   print(f"ts_features: {last_k.ts_features}")
