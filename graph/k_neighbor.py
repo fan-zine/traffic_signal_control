@@ -33,7 +33,7 @@ class LastKFeatures:
 if __name__ == "__main__":
   ts_list = ['ts0', 'ts1', 'ts2']
   k = 2
-  last_k = LastKFeatures(ts_list, k)
+  last_k = LastKFeatures(ts_list, (5,), k)
   print("STEP 1")
   print(f"ts_features: {last_k.ts_features}")
   
