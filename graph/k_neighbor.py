@@ -6,14 +6,15 @@ class LastKFeatures:
   Stores last k features for each TrafficSignal.
   '''
 
-  def __init__(self, ts_id_list, k):
+  def __init__(self, ts_id_list, feature_shape, k):
     '''
     Args:
       ts_id_list (list[str]): List of TrafficSignal ids.
+      feature_shape (tuple(int)): shape of feature.
       k (int): k features to track
     '''
     self.k = k
-    self.ts_features = {ts_id: [] for ts_id in ts_id_list }
+    self.ts_features = {ts_id: [torch.zeros(feature_shape) for _ in range(k)] for ts_id in ts_id_list }
 
   def update(self, features):
     '''
@@ -25,7 +26,9 @@ class LastKFeatures:
 
     for ts_id, feature in features.items():
       self.ts_features[ts_id].insert(0, feature)
-      if len(self.ts_features[ts_id]) > k: self.ts_features[ts_id].pop()
+      self.ts_features[ts_id].pop()
+
+    
 
 if __name__ == "__main__":
   ts_list = ['ts0', 'ts1', 'ts2']
