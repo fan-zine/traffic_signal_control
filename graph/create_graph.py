@@ -30,7 +30,7 @@ def get_neighbors(ts_indx, adj_list, k):
     * subset (LongTensor): the nodes involved in the subgraph
     * edge_index (LongTensor): the filtered edge_index connectivity
     * mapping (LongTensor): the mapping from node indices in node_idx to their new location
-    * edge_mask (LongTensor): edge mask indicating which edges were preserved
+    * edge_mask (BoolTensor): edge mask indicating which edges were preserved
   
   Args:
     * ts_indx (dict[str: int]): mapping of TrafficSignal id to node index.
