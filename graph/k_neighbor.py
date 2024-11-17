@@ -27,22 +27,22 @@ class LastKFeatures:
   Stores last k features for each TrafficSignal.
   '''
 
-  def __init__(self, ts_id_list, feature_shape, k):
+  def __init__(self, node_index_list, feature_shape, k):
     '''
     Args:
-      ts_id_list (list[str]): List of TrafficSignal ids.
+      node_index_list (list[int]): List of node index
       feature_shape (tuple(int)): shape of feature.
       k (int): k features to track
     '''
     self.k = k
-    self.ts_features = {ts_id: [torch.zeros(feature_shape) for _ in range(k)] for ts_id in ts_id_list }
+    self.ts_features = {node_index: [torch.zeros(feature_shape) for _ in range(k)] for node_index in node_index_list }
 
   def update(self, features):
     '''
     Update self.ts_features with most recent features.
 
     Args:
-      features (dict{str: tensor}): dictionary mapping feature for each TrafficSignal id.
+      features (dict{int: tensor}): dictionary mapping feature for each node index.
     '''
 
     for ts_id, feature in features.items():
@@ -52,23 +52,23 @@ class LastKFeatures:
     
 
 if __name__ == "__main__":
-  ts_list = ['ts0', 'ts1', 'ts2']
+  node_index_list = [0, 1, 2]
   k = 2
-  last_k = LastKFeatures(ts_list, (5,), k)
+  last_k = LastKFeatures(node_index_list, (5,), k)
   print("STEP 1")
   print(f"ts_features: {last_k.ts_features}")
   
-  features = {'ts0': torch.ones(5), 'ts1': torch.ones(5), 'ts2': torch.ones(5)}
+  features = {0: torch.ones(5), 1: torch.ones(5), 2: torch.ones(5)}
   last_k.update(features)
   print("STEP 2")
   print(f"ts_features: {last_k.ts_features}")
   
-  features = {'ts0': torch.full((5,), 2), 'ts1': torch.full((5,), 2), 'ts2': torch.full((5,), 2)}
+  features = {0: torch.full((5,), 2), 1: torch.full((5,), 2), 2: torch.full((5,), 2)}
   last_k.update(features)
   print("STEP 3")
   print(f"ts_features: {last_k.ts_features}")
   
-  features = {'ts0': torch.full((5,), 3), 'ts1': torch.full((5,), 3), 'ts2': torch.full((5,), 3)}
+  features = {0: torch.full((5,), 3), 1: torch.full((5,), 3), 2: torch.full((5,), 3)}
   last_k.update(features)
   print("STEP 4")
   print(f"ts_features: {last_k.ts_features}")
