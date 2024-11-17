@@ -1,7 +1,7 @@
 import torch
 import torch_geometric
 
-def get_neighbors(ts_indx, adj_list, k):
+def get_neighbors(ts_index, adj_list, k):
   '''
   Use k_hop_subgraph (https://pytorch-geometric.readthedocs.io/en/latest/modules/utils.html#torch_geometric.utils.k_hop_subgraph).
   Returns dictionary with tuple representing subgraph:
@@ -20,7 +20,7 @@ def get_neighbors(ts_indx, adj_list, k):
                                                            num_hops=k, 
                                                            edge_index=adj_list, 
                                                            relabel_nodes=False) \
-               for ts_id, node_index in ts_indx.items()}
+               for ts_id, node_index in ts_index.items()}
 
 class LastKFeatures:
   '''
