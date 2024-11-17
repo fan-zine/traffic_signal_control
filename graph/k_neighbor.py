@@ -16,10 +16,10 @@ def get_neighbors(ts_index, adj_list, k):
     * k (int): value of k, for k-hop neighbors.
   '''
 
-  return {ts_id: torch_geometric.utils.k_hop_subgraph(node_idx=node_index, 
+  return {ts_id: torch_geometric.utils.k_hop_subgraph(node_idx=int(node_index), 
                                                            num_hops=k, 
                                                            edge_index=adj_list, 
-                                                           relabel_nodes=False) \
+                                                           relabel_nodes=True) \
                for ts_id, node_index in ts_index.items()}
 
 class LastKFeatures:
@@ -72,3 +72,11 @@ if __name__ == "__main__":
   last_k.update(features)
   print("STEP 4")
   print(f"ts_features: {last_k.ts_features}")
+
+  print("Generate subgraphs")
+  ts_index = {'ts0': 0, 'ts1': 1, 'ts2': 2, 'ts3': 3, 'ts4': 4, 'ts5': 5}
+  adj_list = torch.LongTensor([[0,0,1,3,3,2,3,4,4,5],[1,3,0,0,2,3,4,3,5,4]])
+  k=2
+  res = get_neighbors(ts_index, adj_list, k)
+  print(res)
+
