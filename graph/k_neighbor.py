@@ -1,5 +1,26 @@
 import torch
+import torch_geometric
 
+def get_neighbors(ts_indx, adj_list, k):
+  '''
+  Use k_hop_subgraph (https://pytorch-geometric.readthedocs.io/en/latest/modules/utils.html#torch_geometric.utils.k_hop_subgraph).
+  Returns dictionary with tuple representing subgraph:
+    * subset (LongTensor): the nodes involved in the subgraph
+    * edge_index (LongTensor): the filtered edge_index connectivity
+    * mapping (LongTensor): the mapping from node indices in node_idx to their new location
+    * edge_mask (BoolTensor): edge mask indicating which edges were preserved
+  
+  Args:
+    * ts_indx (dict[str: int]): mapping of TrafficSignal id to node index.
+    * adj_list (Tensor): list of directed edges in graph.
+    * k (int): value of k, for k-hop neighbors.
+  '''
+
+  return {ts_id: torch_geometric.utils.k_hop_subgraph(node_idx=node_index, 
+                                                           num_hops=k, 
+                                                           edge_index=adj_list, 
+                                                           relabel_nodes=False) \
+               for ts_id, node_index in ts_indx.items()}
 
 class LastKFeatures:
   '''
