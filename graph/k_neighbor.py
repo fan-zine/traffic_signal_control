@@ -79,4 +79,24 @@ if __name__ == "__main__":
   k=2
   res = get_neighbors(ts_index, adj_list, k)
   print(res)
+  '''
+  key: ts0
+   value: (tensor([0, 1, 2, 3, 4]), tensor([[0, 0, 1, 3, 3, 2, 3, 4],
+          [1, 3, 0, 0, 2, 3, 4, 3]]), tensor([0]), tensor([ True,  True,  True,  True,  True,  True,  True,  True, False, False]))
+  key: ts1
+   value: (tensor([0, 1, 3]), tensor([[0, 0, 1, 2],
+          [1, 2, 0, 0]]), tensor([1]), tensor([ True,  True,  True,  True, False, False, False, False, False, False]))
+  key: ts2
+   value: (tensor([0, 2, 3, 4]), tensor([[0, 2, 2, 1, 2, 3],
+          [2, 0, 1, 2, 3, 2]]), tensor([1]), tensor([False,  True, False,  True,  True,  True,  True,  True, False, False]))
+  key: ts3
+   value: (tensor([0, 1, 2, 3, 4, 5]), tensor([[0, 0, 1, 3, 3, 2, 3, 4, 4, 5],
+          [1, 3, 0, 0, 2, 3, 4, 3, 5, 4]]), tensor([3]), tensor([True, True, True, True, True, True, True, True, True, True]))
+  key: ts4
+   value: (tensor([0, 2, 3, 4, 5]), tensor([[0, 2, 2, 1, 2, 3, 3, 4],
+          [2, 0, 1, 2, 3, 2, 4, 3]]), tensor([3]), tensor([False,  True, False,  True,  True,  True,  True,  True,  True,  True]))
+  key: ts5
+   value: (tensor([3, 4, 5]), tensor([[0, 1, 1, 2],
+          [1, 0, 2, 1]]), tensor([2]), tensor([False, False, False, False, False, False,  True,  True,  True,  True]))
+  '''
 
