@@ -16,8 +16,11 @@ class PolicyNetwork(torch.nn.Module):
         self.ts_map = ts_map
         self.laplacian = args["laplacian_matrix"]
         self.eigenvecs = args["eigenvecs"]
-        self.num_transformer_layers = args["num_transformer_layers"]
-        self.num_mlp_layers = args["num_mlp_layers"]
+        self.num_layers = args.get("num_transformer_layers", 2)
+        self.num_proj_layers = args.get("num_proj_layers", 2)
+
+        assert self.num_layers > 1
+        assert self.num_proj_layers > 1
 
 
         self.input_features = args["in_features"]
@@ -27,14 +30,14 @@ class PolicyNetwork(torch.nn.Module):
         self.layers = ModuleList()
         self.layers.append(TransformerConv(in_channels=self.input_features, out_channels=self.hidden_features, heads=4))
         self.layers.append(LeakyReLU())
-        for _ in range(self.num_transformer_layers-2):
+        for _ in range(self.num_layers-2):
           self.layers.append(TransformerConv(in_channels=self.input_features, out_channels=self.hidden_features, heads=4))
           self.layers.append(LeakyReLU())
         self.layers.append(TransformerConv(in_channels=self.hidden_features, out_channels=self.hidden_features, heads=4))
 
         # Add MLP for classification
         proj_head = [Linear(in_features=2*self.hidden_features, out_features=self.hidden_features), LeakyReLU()]
-        for _ in range(self.num_mlp_layers-2):
+        for _ in range(self.num_proj_layers-2):
           proj_head.append(Linear(in_features=self.hidden_features, out_features=self.hidden_features))
           proj_head.append(LeakyReLU())
         proj_head.append(Linear(in_features=self.hidden_features, out_features=self.output_features))
