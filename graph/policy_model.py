@@ -9,9 +9,12 @@ class TransformerBlock(torch.nn.Module):
     super(TransformerBlock, self).__init__()
     self.transformer = TransformerConv(in_channels=in_channels, out_channels=out_channels, heads=heads)
     self.relu = LeakyReLU()
+    self.proj = Linear(in_features=heads*out_channels, out_features=out_channels)
 
   def forward(self, x, edge_index):
     x = self.transformer(x, edge_index)
+    x = self.relu(x)
+    x = self.proj(x)
     return x
 
 class PolicyNetwork(torch.nn.Module):
@@ -27,7 +30,7 @@ class PolicyNetwork(torch.nn.Module):
         self.traffic_system = traffic_system
         self.ts_map = ts_map
         self.laplacian = args["laplacian_matrix"]
-        self.eigenvecs = args["eigenvecs"]
+        self.eigenvecs = torch.FloatTensor(args["eigenvecs"])
         self.eigenvec_len = self.eigenvecs.shape[0]
         self.num_layers = args.get("num_transformer_layers", 2)
         self.num_proj_layers = args.get("num_proj_layers", 2)
@@ -44,7 +47,7 @@ class PolicyNetwork(torch.nn.Module):
         self.layers.append(TransformerBlock(in_channels=self.input_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4))
         for _ in range(self.num_layers-2):
           self.layers.append(TransformerBlock(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4))
-        self.layers.append(TransformerConv(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4))
+        self.layers.append(TransformerConv(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=1))
 
         # Add projection head for classification
         proj_head = []
@@ -66,14 +69,16 @@ class PolicyNetwork(torch.nn.Module):
     * subtgraph_indices: list of node indices used in subgraph to add positional encoding
     '''
     x = node_features
-    pos = np.take(self.eigenvecs, subgraph_indices, dim=0)
+    pos = np.take(self.eigenvecs, subgraph_indices, axis=0)
+
     for layer in self.layers:
       x = torch.cat([x, pos], dim=1)
-      x = layer(x)
+      x = layer(x, edge_index)
 
-    output = self.proj(x[agent_index])
+    output = self.proj_head(x[[agent_index]])
     output = output[:num_green_phases] # perform masking to only legal actions
     probs = self.softmax(output)
 
     return probs
+
   
