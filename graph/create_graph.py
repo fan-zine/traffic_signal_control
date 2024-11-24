@@ -6,7 +6,7 @@ def construct_graph_and_features(ts_list, device):
   '''
   Returns:
     * node_features (Tensor): list of feature vectors for each node.
-    * adj_list (Tensor): list of directed edges in graph.
+    * adj_list (Tensor): list of directed edges in graph, ex: [[0,1],[2,3]].
     * ts_indx (dict[str: int]): mapping of TrafficSignal id to node index.
     * lane_indx (dict[str: int]): mapping of lane id to adj_list index.
     * num_nodes (int): Total number of nodes in graph.
