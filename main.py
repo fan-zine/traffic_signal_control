@@ -22,6 +22,7 @@ observations = env.reset()
 node_features, adj_list, ts_indx, lane_indx, num_nodes = construct_graph_and_features(env.ts_list, "cuda")
 G = build_networkx_G(adj_list)
 laplacian_matrix, eigenvals, eigenvecs = get_laplacian_eigenvecs(G)
+adj_list = adj_list.reshape(2,-1) # pytorch geometric takes in edge_index in shape (2,|E|). ex: [[0,1,0,2],[1,0,2,1]].
 k = 2
 last_k_features = LastKFeatures([i for i in range(num_nodes)], node_features[0].shape, k)
 last_k_features.update({ node_index: node_features[node_index] for _, node_index in ts_indx.items()})
