@@ -3,7 +3,7 @@ import sumo_rl
 import os
 from custom_reward import custom_reward
 from .graph.create_graph import construct_graph_and_features
-from .graph.node_features import batch_traffic_signal_feature
+from .graph.node_features import build_networkx_G, get_laplacian_eigenvecs, batch_traffic_signal_feature
 
 NET_FILE = './sumo_rl/nets/RESCO/grid4x4/grid4x4.net.xml'
 ROUTE_FILE = './sumo_rl/nets/RESCO/grid4x4/grid4x4_1.rou.xml'
@@ -20,6 +20,8 @@ observations = env.reset()
 
 
 node_features, adj_list, ts_indx, lane_indx, num_nodes = construct_graph_and_features(env.ts_list, "cuda")
+G = build_networkx_G(adj_list)
+laplacian_matrix, eigenvals, eigenvecs = get_laplacian_eigenvecs(G)
 k = 2
 last_k_features = LastKFeatures([i for i in range(num_nodes)], node_features[0].shape, k)
 last_k_features.update({ node_index: node_features[node_index] for _, node_index in ts_indx.items()})
