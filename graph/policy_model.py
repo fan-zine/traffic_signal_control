@@ -57,6 +57,14 @@ class PolicyNetwork(torch.nn.Module):
         self.softmax = LogSoftmax()
 
   def forward(self, node_features, edge_index, agent_index, num_green_phases, subgraph_indices):
+    '''
+    Args:
+    * node_features: node features
+    * edge_index: edge index describing graph
+    * agent_index: agent to generate action for
+    * num_green_phases: number of green phases for agent, used to mask action space to legal actions
+    * subtgraph_indices: list of node indices used in subgraph to add positional encoding
+    '''
     x = node_features
     pos = np.take(self.eigenvecs, subgraph_indices, dim=0)
     for layer in self.layers:
