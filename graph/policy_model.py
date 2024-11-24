@@ -1,4 +1,6 @@
 import torch
+from torch.nn import Linear, LeakyReLU, Sequential, ModuleList, LogSoftmax
+from torch_geometric.nn.conv import TransformerConv
 
 class PolicyNetwork(torch.nn.Module):
   def __init__(self, ts_map, traffic_system, args, aggr="mean"):
@@ -17,9 +19,28 @@ class PolicyNetwork(torch.nn.Module):
         self.num_transformer_layers = args["num_transformer_layers"]
         self.num_mlp_layers = args["num_mlp_layers"]
 
+
+        self.input_features = args["in_features"]
+        self.hidden_features = args["hidden_features"]
+        self.output_features = args["output_features"]
         # Add Transformer layers
+        self.layers = ModuleList()
+        self.layers.append(TransformerConv(in_channels=self.input_features, out_channels=self.hidden_features, heads=4))
+        self.layers.append(LeakyReLU())
+        for _ in range(self.num_transformer_layers-2):
+          self.layers.append(TransformerConv(in_channels=self.input_features, out_channels=self.hidden_features, heads=4))
+          self.layers.append(LeakyReLU())
+        self.layers.append(TransformerConv(in_channels=self.hidden_features, out_channels=self.hidden_features, heads=4))
 
         # Add MLP for classification
+        proj_head = [Linear(in_features=2*self.hidden_features, out_features=self.hidden_features), LeakyReLU()]
+        for _ in range(self.num_mlp_layers-2):
+          proj_head.append(Linear(in_features=self.hidden_features, out_features=self.hidden_features))
+          proj_head.append(LeakyReLU())
+        proj_head.append(Linear(in_features=self.hidden_features, out_features=self.output_features))
+
+        self.proj_head = Sequential(*proj_head)
+        self.softmax = LogSoftmax()
 
   def forward(self, node_features, edge_index, num_green_phases):
     # Add work
