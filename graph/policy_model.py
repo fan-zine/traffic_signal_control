@@ -14,6 +14,8 @@ class PolicyNetwork(torch.nn.Module):
         self.ts_map = ts_map
         self.laplacian = args["laplacian_matrix"]
         self.eigenvecs = args["eigenvecs"]
+        self.num_transformer_layers = args["num_transformer_layers"]
+        self.num_mlp_layers = args["num_mlp_layers"]
 
         # Add Transformer layers
 
