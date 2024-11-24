@@ -5,9 +5,9 @@ from torch_geometric.nn.conv import TransformerConv
 from torch_geometric.nn.aggr import MLPAggregation, MeanAggregation
 
 class TransformerBlock(torch.nn.Module):
-  def __init__(self, in_channels, out_channels, heads=4):
+  def __init__(self, in_channels, out_channels, heads=4, dropout=0.0):
     super(TransformerBlock, self).__init__()
-    self.transformer = TransformerConv(in_channels=in_channels, out_channels=out_channels, heads=heads)
+    self.transformer = TransformerConv(in_channels=in_channels, out_channels=out_channels, heads=heads, dropout=dropout)
     self.norm = BatchNorm1d(num_features=out_channels)
     self.relu = LeakyReLU()
     self.proj = Linear(in_features=heads*out_channels, out_features=out_channels)
@@ -44,12 +44,13 @@ class PolicyNetwork(torch.nn.Module):
         self.input_features = args["in_features"]
         self.hidden_features = args["hidden_features"]
         self.output_features = args["output_features"]
+        self.dropout = args.get("dropout", 0.0)
         # Add Transformer layers
         self.layers = ModuleList()
-        self.layers.append(TransformerBlock(in_channels=self.input_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4))
+        self.layers.append(TransformerBlock(in_channels=self.input_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4, dropout=self.dropout))
         for _ in range(self.num_layers-2):
-          self.layers.append(TransformerBlock(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4))
-        self.layers.append(TransformerConv(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=1))
+          self.layers.append(TransformerBlock(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4, dropout=self.dropout))
+        self.layers.append(TransformerConv(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=1, dropout=self.dropout))
 
         # Add projection head for classification
         proj_head = []
