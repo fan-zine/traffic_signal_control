@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from torch.nn import Linear, LeakyReLU, Sequential, ModuleList, LogSoftmax
+from torch.nn import Linear, LeakyReLU, Sequential, ModuleList, LogSoftmax, BatchNorm1d
 from torch_geometric.nn.conv import TransformerConv
 from torch_geometric.nn.aggr import MLPAggregation, MeanAggregation
 
@@ -8,13 +8,15 @@ class TransformerBlock(torch.nn.Module):
   def __init__(self, in_channels, out_channels, heads=4):
     super(TransformerBlock, self).__init__()
     self.transformer = TransformerConv(in_channels=in_channels, out_channels=out_channels, heads=heads)
+    self.norm = BatchNorm1d(num_features=out_channels)
     self.relu = LeakyReLU()
     self.proj = Linear(in_features=heads*out_channels, out_features=out_channels)
 
   def forward(self, x, edge_index):
     x = self.transformer(x, edge_index)
-    x = self.relu(x)
     x = self.proj(x)
+    x = self.norm(x)
+    x = self.relu(x)
     return x
 
 class PolicyNetwork(torch.nn.Module):
