@@ -1,6 +1,18 @@
 import torch
 import numpy as np
+import networkx as nx
 from ..sumo_rl.environment.traffic_signal import TrafficSignal
+
+def build_networkx_G(adj_list):
+    G = nx.Graph()
+    for u,v in adj_list:
+        G.add_edge(u,v)
+    return G
+
+def get_laplacian_eigenvecs(G):
+    laplacian  = nx.laplacian_matrix(G).toarray()
+    eigenvals, eigenvecs = np.linalg.eig(laplacian)
+    return laplacian, eigenvals, eigenvecs
 
 def traffic_signal_feature(ts, num_green_phases, device):
     '''
