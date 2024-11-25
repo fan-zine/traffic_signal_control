@@ -48,9 +48,11 @@ class PolicyNetwork(torch.nn.Module):
         # Add Transformer layers
         self.layers = ModuleList()
         self.layers.append(TransformerBlock(in_channels=self.input_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4, dropout=self.dropout))
+        prev = self.input_features
         for _ in range(self.num_layers-2):
-          self.layers.append(TransformerBlock(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=4, dropout=self.dropout))
-        self.layers.append(TransformerConv(in_channels=self.hidden_features+self.eigenvec_len, out_channels=self.hidden_features, heads=1, dropout=self.dropout))
+          self.layers.append(TransformerBlock(in_channels=self.hidden_features+prev+self.eigenvec_len, out_channels=self.hidden_features, heads=4, dropout=self.dropout))
+          prev = self.hidden_features
+        self.layers.append(TransformerConv(in_channels=self.hidden_features+prev+self.eigenvec_len, out_channels=self.hidden_features, heads=1, dropout=self.dropout))
 
         # Add projection head for classification
         proj_head = []
@@ -73,8 +75,12 @@ class PolicyNetwork(torch.nn.Module):
     '''
     x = node_features
     pos = np.take(self.eigenvecs, subgraph_indices, axis=0)
-
+    prev = None
     for layer in self.layers:
+      temp = x
+      if prev != None:
+        x = torch.cat([x, prev], dim=1)
+      prev = temp
       x = torch.cat([x, pos], dim=1)
       x = layer(x, edge_index)
 
