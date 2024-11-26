@@ -49,4 +49,4 @@ def construct_graph_representation(ts_list, device):
             else: lane[0] = incoming_indx
     num_nodes = outgoing_indx+1
 
-    return ts_idx, num_nodes, lanes_index, torch.Tensor(adj_list, device=device)
+    return ts_idx, num_nodes, lanes_index, torch.LongTensor(adj_list, device=device)
