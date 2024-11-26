@@ -64,7 +64,7 @@ class PolicyNetwork(torch.nn.Module):
         self.proj_head = Sequential(*proj_head)
         self.softmax = LogSoftmax()
 
-  def forward(self, node_features, edge_index, agent_index, num_green_phases, subgraph_indices):
+  def forward(self, node_features, edge_index, agent_index, subgraph_indices):
     '''
     Args:
     * node_features: node features
@@ -85,7 +85,6 @@ class PolicyNetwork(torch.nn.Module):
       x = layer(x, edge_index)
 
     output = self.proj_head(x[[agent_index]])
-    output = output[:num_green_phases] # perform masking to only legal actions
     probs = self.softmax(output)
 
     return probs
