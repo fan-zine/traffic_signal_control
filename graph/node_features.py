@@ -4,7 +4,7 @@ import networkx as nx
 from sumo_rl.environment.traffic_signal import TrafficSignal
 
 def build_networkx_G(adj_list):
-    G = nx.Graph()
+    G = nx.DiGraph()
     for u,v in adj_list:
         G.add_edge(u,v)
     return G
