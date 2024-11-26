@@ -1,6 +1,6 @@
-from .graph_converter import construct_graph_representation
-from .node_features import batch_traffic_signal_feature
-from ..sumo_rl.environment.traffic_signal import TrafficSignal
+from graph.graph_converter import construct_graph_representation
+from graph.node_features import batch_traffic_signal_feature
+from sumo_rl.environment.traffic_signal import TrafficSignal
 
 def construct_graph_and_features(ts_list, device):
   '''
