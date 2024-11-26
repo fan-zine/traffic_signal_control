@@ -1,4 +1,4 @@
-"""Q-learning Agent class."""
+"""Graph Transformer based Agent class."""
 from sumo_rl.exploration.epsilon_greedy import EpsilonGreedy
 
 
