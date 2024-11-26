@@ -47,6 +47,6 @@ def construct_graph_representation(ts_list, device):
             if lane[1] == -1:
                 lane[1] = outgoing_indx
             else: lane[0] = incoming_indx
-    num_nodes = next_indx
+    num_nodes = outgoing_indx+1
 
     return ts_idx, num_nodes, lanes_index, torch.Tensor(adj_list, device=device)
