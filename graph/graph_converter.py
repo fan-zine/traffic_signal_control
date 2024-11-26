@@ -1,5 +1,5 @@
 import torch
-from ..sumo_rl.environment.traffic_signal import TrafficSignal
+from sumo_rl.environment.traffic_signal import TrafficSignal
 
 def construct_graph_representation(ts_list, device):
     '''
