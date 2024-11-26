@@ -38,17 +38,15 @@ def construct_graph_representation(ts_list, device):
             out_edge_idx = lanes_index[out_edge]
             adj_list[out_edge_idx][0] = ts_id
 
-        print(ts.out_lanes)
-
-    next_indx = len(ts_idx)
+    incoming_indx = len(ts_idx)
+    outgoing_indx = incoming_indx+1
     # for unassigned positions, add dummy nodes
     for lane in adj_list:
         if lane[0] == -1 or lane[1] == -1:
             pos = 0
             if lane[1] == -1:
-                pos = 1
-            lane[pos] = next_indx
-            next_indx += 1
+                lane[1] = outgoing_indx
+            else: lane[0] = incoming_indx
     num_nodes = next_indx
 
     return ts_idx, num_nodes, lanes_index, torch.Tensor(adj_list, device=device)
