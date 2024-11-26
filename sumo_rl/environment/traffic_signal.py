@@ -250,6 +250,7 @@ class TrafficSignal:
                     self.env.vehicles[veh][veh_lane] = acc - sum(
                         [self.env.vehicles[veh][lane] for lane in self.env.vehicles[veh].keys() if lane != veh_lane]
                     )
+                acc =  self.env.vehicles[veh][veh_lane]
                 if acc > max_first_vehicle:
                     max_first_vehicle = acc
             max_wait_time_per_lane.append(max_first_vehicle)
