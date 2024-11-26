@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import networkx as nx
-from ..sumo_rl.environment.traffic_signal import TrafficSignal
+from sumo_rl.environment.traffic_signal import TrafficSignal
 
 def build_networkx_G(adj_list):
     G = nx.Graph()
