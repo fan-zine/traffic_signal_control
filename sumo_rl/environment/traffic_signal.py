@@ -43,6 +43,8 @@ class TrafficSignal:
 
     # Default min gap of SUMO (see https://sumo.dlr.de/docs/Simulation/Safety.html). Should this be parameterized?
     MIN_GAP = 2.5
+    MAX_WAIT_TIME = 100
+    GAMMA = 0.2
 
     def __init__(
         self,
@@ -52,7 +54,6 @@ class TrafficSignal:
         yellow_time: int,
         min_green: int,
         max_green: int,
-        begin_time: int,
         reward_fn: Union[str, Callable],
         sumo,
     ):
@@ -65,7 +66,6 @@ class TrafficSignal:
             yellow_time (int): The time in seconds of the yellow phase.
             min_green (int): The minimum time in seconds of the green phase.
             max_green (int): The maximum time in seconds of the green phase.
-            begin_time (int): The time in seconds when the traffic signal starts operating.
             reward_fn (Union[str, Callable]): The reward function. Can be a string with the name of the reward function or a callable function.
             sumo (Sumo): The Sumo instance.
         """
@@ -78,7 +78,6 @@ class TrafficSignal:
         self.green_phase = 0
         self.is_yellow = False
         self.time_since_last_phase_change = 0
-        self.next_action_time = begin_time
         self.last_measure = 0.0
         self.last_reward = None
         self.reward_fn = reward_fn
@@ -91,12 +90,11 @@ class TrafficSignal:
                 raise NotImplementedError(f"Reward function {self.reward_fn} not implemented")
 
         self.observation_fn = self.env.observation_class(self)
-
         self._build_phases()
 
-        self.lanes = list(
+        self.lanes = list(  # in_lanes
             dict.fromkeys(self.sumo.trafficlight.getControlledLanes(self.id))
-        )  # Remove duplicates and keep order
+        )  # Remove duplicates and keep order: match the order implied by the traffic light's state string e.g. "GrGr"
         self.out_lanes = [link[0][1] for link in self.sumo.trafficlight.getControlledLinks(self.id) if link]
         self.out_lanes = list(set(self.out_lanes))
         self.lanes_length = {lane: self.sumo.lane.getLength(lane) for lane in self.lanes + self.out_lanes}
@@ -106,9 +104,6 @@ class TrafficSignal:
 
     def _build_phases(self):
         phases = self.sumo.trafficlight.getAllProgramLogics(self.id)[0].phases
-        if self.env.fixed_ts:
-            self.num_green_phases = len(phases) // 2  # Number of green phases == number of phases (green+yellow) divided by 2
-            return
 
         self.green_phases = []
         self.yellow_dict = {}
@@ -132,17 +127,13 @@ class TrafficSignal:
                 self.yellow_dict[(i, j)] = len(self.all_phases)
                 self.all_phases.append(self.sumo.trafficlight.Phase(self.yellow_time, yellow_state))
 
+    def run_rl_agents(self):
         programs = self.sumo.trafficlight.getAllProgramLogics(self.id)
         logic = programs[0]
         logic.type = 0
         logic.phases = self.all_phases
         self.sumo.trafficlight.setProgramLogic(self.id, logic)
         self.sumo.trafficlight.setRedYellowGreenState(self.id, self.all_phases[0].state)
-
-    @property
-    def time_to_act(self):
-        """Returns True if the traffic signal should act in the current step."""
-        return self.next_action_time == self.env.sim_step
 
     def update(self):
         """Updates the traffic signal state.
@@ -165,14 +156,12 @@ class TrafficSignal:
         if self.green_phase == new_phase or self.time_since_last_phase_change < self.yellow_time + self.min_green:
             # self.sumo.trafficlight.setPhase(self.id, self.green_phase)
             self.sumo.trafficlight.setRedYellowGreenState(self.id, self.all_phases[self.green_phase].state)
-            self.next_action_time = self.env.sim_step + self.delta_time
         else:
             # self.sumo.trafficlight.setPhase(self.id, self.yellow_dict[(self.green_phase, new_phase)])  # turns yellow
             self.sumo.trafficlight.setRedYellowGreenState(
                 self.id, self.all_phases[self.yellow_dict[(self.green_phase, new_phase)]].state
             )
             self.green_phase = new_phase
-            self.next_action_time = self.env.sim_step + self.delta_time
             self.is_yellow = True
             self.time_since_last_phase_change = 0
 
@@ -199,6 +188,11 @@ class TrafficSignal:
         reward = self.last_measure - ts_wait
         self.last_measure = ts_wait
         return reward
+
+    def _weighted_wait_queue_reward(self):  # r_i,t = queue_i,t + gamma * wait_i,t
+        queue_per_lanes = self.get_lanes_queue()
+        max_wait_per_lanes = np.array(self.get_max_cumulative_waiting_time_of_the_first_vehicles_per_lane())/self.MAX_WAIT_TIME
+        return -float(np.sum(queue_per_lanes) + self.GAMMA * np.sum(max_wait_per_lanes))
 
     def _observation_fn_default(self):
         phase_id = [1 if self.green_phase == i else 0 for i in range(self.num_green_phases)]  # one-hot encoding
@@ -250,9 +244,12 @@ class TrafficSignal:
                     self.env.vehicles[veh][veh_lane] = acc - sum(
                         [self.env.vehicles[veh][lane] for lane in self.env.vehicles[veh].keys() if lane != veh_lane]
                     )
-                acc =  self.env.vehicles[veh][veh_lane]
-                if acc > max_first_vehicle:
-                    max_first_vehicle = acc
+
+                # Compare waiting time specific to the current lane
+                lane_wait_time = self.env.vehicles[veh][veh_lane]
+                if lane_wait_time > max_first_vehicle:
+                    max_first_vehicle = lane_wait_time
+
             max_wait_time_per_lane.append(max_first_vehicle)
         return max_wait_time_per_lane
 
@@ -274,6 +271,10 @@ class TrafficSignal:
         return sum(self.sumo.lane.getLastStepVehicleNumber(lane) for lane in self.out_lanes) - sum(
             self.sumo.lane.getLastStepVehicleNumber(lane) for lane in self.lanes
         )
+
+    def get_pressure_with_lane_capacity(self):
+        """Returns the pressure taking into account the maximum carrying capacity of the lane"""
+        return sum(self.get_out_lanes_density()) - sum(self.get_lanes_density())
 
     def get_out_lanes_density(self) -> List[float]:
         """Returns the density of the vehicles in the outgoing lanes of the intersection."""
@@ -335,4 +336,5 @@ class TrafficSignal:
         "average-speed": _average_speed_reward,
         "queue": _queue_reward,
         "pressure": _pressure_reward,
+        "weighted_wait_queue": _weighted_wait_queue_reward
     }
