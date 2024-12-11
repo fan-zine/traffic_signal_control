@@ -10,7 +10,7 @@
 # Traffic Signal Control Using Decentralised MARL via Graph
 <!-- start intro -->
 
-TODO: Add more to README.
+This project builds upon 
 
 SUMO-RL provides a simple interface to instantiate Reinforcement Learning (RL) environments with [SUMO](https://github.com/eclipse/sumo) for Traffic Signal Control.
 

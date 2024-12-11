@@ -16,7 +16,7 @@ import torch.optim as optim
 # Set up the environment
 NET_FILE = '../sumo_rl/nets/RESCO/grid4x4/grid4x4.net.xml'
 ROUTE_FILE = '../sumo_rl/nets/RESCO/grid4x4/grid4x4_1.rou.xml'
-OUTPUT_CSV = '../results/my_result2'
+OUTPUT_CSV = '../results/my_result'
 MODEL_DIR = '../models'
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
