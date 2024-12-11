@@ -35,7 +35,7 @@ Below is an organized overview of important scripts and directories:
 │   ├─ centralised_dcrnn.py      # Centralized DCRNN training
 │   ├─ decentralised_control.py  # Decentralized Transformer-based training
 │   └─ ...
-├─ outputs/
+├─ outputs/                      # Collection of training results including plots and script to generate plot
 └─ README.md                     # This README
 ```
 
