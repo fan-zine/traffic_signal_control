@@ -2,8 +2,6 @@ import torch
 import numpy as np
 from torch.nn import Linear, LeakyReLU, Sequential, ModuleList, LogSoftmax, BatchNorm1d
 from torch_geometric.nn.conv import TransformerConv
-from torch_geometric.nn.aggr import MLPAggregation, MeanAggregation
-
 
 class TransformerBlock(torch.nn.Module):
     def __init__(self, in_channels, out_channels, heads=4, dropout=0.0):

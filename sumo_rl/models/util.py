@@ -97,8 +97,9 @@ def construct_graph_representation(ts_list):
         ts_list (list[TrafficSignal]): list of TrafficSignal to build graph representation for.
     '''
     # collect traffic signal ids
-    sort_ts_func = lambda ts: ts.id
-    ts_idx = {ts.id: i for i, ts in enumerate(sorted(ts_list, key=sort_ts_func))}
+    # sort_ts_func = lambda ts: ts.id
+    # ts_idx = {ts.id: i for i, ts in enumerate(sorted(ts_list, key=sort_ts_func))}
+    ts_idx = {ts.id: i for i, ts in enumerate(ts_list)}
 
     # collect all lane ids
     lanes = [ts.lanes + ts.out_lanes for ts in ts_list]

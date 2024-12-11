@@ -111,6 +111,7 @@ class PGSingleAgent:
 
             print(f"Episode {episode}, Total Reward: {sum(self.rewards)}, Loss: {policy_loss.item()}")
 
+        env.save_csv(env.out_csv_name, num_episodes)
         env.close()
 
     def _compute_discounted_rewards(self, gamma=0.99):
@@ -132,44 +133,51 @@ class PGSingleAgent:
         """
         Save trained model weights.
         """
-        torch.save(self.model.state_dict(), model_path)
+        torch.save(self.actor.state_dict(), model_path)
 
-    def test(self, env, num_episodes):
+    def test(self, env):
         """
-        Test the RL agent without updating weights.
+        Test the RL agent.
 
         Args:
             env: SumoEnvironment.
             num_episodes (int): Number of episodes to run.
         """
-        total_rewards = []
-        for episode in range(num_episodes):
-            # Reset environment and observation buffer
-            observations = env.reset()
-            self.rewards = []  # Reset rewards for this episode
 
-            while True:
-                obs = self.process_observations(observations)  # (seq_len, num_nodes, input_dim)
-                obs = obs.unsqueeze(1)  # (seq_len, 1, num_nodes, input_dim)
-                initial_hidden_state = torch.zeros((1, self.num_nodes * self.enc_hid_dim), device=self.device)
-                output_features = self.encoder(obs, initial_hidden_state)  # (1, num_nodes, hid_dim)
+        obs = env.reset()
+        env.fixed_ts = True
+        self.last_k_observations = [obs]
+        step_count = 0
 
-                input_features = obs[-1].unsqueeze(0)  # (1, num_nodes, input_dim)
-                logits = self.predictor(output_features, input_features).squeeze(0)  # (num_ts, max_green_phases)
+        while True:
+            # Warmup phase with default traffic light control
+            if step_count < self.k:
+                obs, _, _, _ = env.step(action=None)  # Run default traffic light control
+                self.last_k_observations.append(obs)
+                step_count += 1
+                continue
 
-                actions = self.select_actions(logits)  # Get actions for all traffic signals
-                observations, rewards, terminations, truncations, infos = env.step(actions)
+            # RL control starts after warmup
+            if step_count == self.k:
+                env.fixed_ts = False  # Switch to RL control
+                for _, ts in env.traffic_signals.items():
+                    ts.run_rl_agents()  # Activate RL agents
 
-                global_reward = self.compute_global_reward(rewards)  # Compute the global reward
-                self.rewards.append(global_reward)
+            with torch.no_grad:
+                obs = self.process_observations()
+                obs = obs.unsqueeze(1)  # Shape: (seq_len, 1, num_nodes, input_dim)
+                initial_hidden_state = torch.zeros((1, self.num_nodes * self.hid_dim), device=self.device)
+                logits = self.actor(obs, initial_hidden_state).squeeze(0)
+                actions = self.select_actions(logits)
 
-                if terminations["__all__"]:
-                    break
+            obs, rewards, dones, infos = env.step(actions)
+            self.last_k_observations.append(obs)
+            if len(self.last_k_observations) > self.k:
+                self.last_k_observations.pop(0)
 
-            total_episode_reward = sum(self.rewards)
-            total_rewards.append(total_episode_reward)
-            print(f"Episode {episode}, Total Reward: {total_episode_reward}")
+            if dones["__all__"]:
+                break
 
-        average_reward = sum(total_rewards) / num_episodes
-        print(f"Average Reward over {num_episodes} episodes: {average_reward}")
+            step_count += 1
+
 

@@ -57,6 +57,40 @@ class DCRNNEncoder(BaseModel):
         return final_output
 
 
+class SingleTLPhasePredictor(nn.Module):
+    def __init__(self, hid_dim, input_dim, max_green_phases, mask):
+        """
+        Predicts actions for traffic nodes based on the hidden state from the encoder and local features.
+
+        Args:
+            hid_dim (int): Hidden dimension size from the DCRNN encoder.
+            input_dim (int): Input dimension size from the DCRNN encoder.
+            max_green_phases (int): Maximum number of possible green phases for any traffic node.
+            mask (torch.Tensor): A binary mask of shape (num_nodes, max_green_phases)
+        """
+        super(SingleTLPhasePredictor, self).__init__()
+        self.hid_dim = hid_dim
+        self.mask = mask
+        self.input_dim = hid_dim + input_dim
+
+        # MLP to map concatenated features to action logits
+        self.mlp = nn.Sequential(
+            nn.Linear(self.input_dim, hid_dim),
+            nn.ReLU(),
+            nn.Linear(hid_dim, max_green_phases)
+        )
+
+    def forward(self, hidden_states, input_features, agent_idx, subgraph_nodes):  # agent_idx: global index
+        # hidden_states: (bs, subgraph_nodes, hid_dim)
+        # input_features:  (bs, subgraph_nodes, input_dim)
+        local_agent_idx = (subgraph_nodes == agent_idx).nonzero(as_tuple=True)[0].item()
+        x = torch.cat([hidden_states[:, local_agent_idx], input_features[:, local_agent_idx]], dim=1)
+        logits = self.mlp(x)
+        logits = logits + (1 - self.mask[agent_idx]) * -1e9
+        return logits
+
+
+
 class TLPhasePredictor(nn.Module):
     def __init__(self, hid_dim, input_dim, num_nodes, num_virtual_nodes, max_green_phases, mask):
         """
@@ -117,12 +151,17 @@ class TSModel(nn.Module):
         self.encoder = encoder
         self.head = head
 
-    def forward(self, obs, initial_hidden_state):  # obs: shape of [num_timesteps, num_nodes, feature_size]
+    def forward(self, obs, initial_hidden_state, ts_idx=None, subgraph_nodes=None):  # obs: shape of [num_timesteps, bs, num_nodes, feature_size]
         output_features = self.encoder(obs, initial_hidden_state)  # (bs, num_nodes, hid_dim)
 
         input_features = obs[-1]  # (bs, num_nodes, input_dim)
 
-        logits = self.head(output_features, input_features)  # (bs, num_ts, max_green_phases)
+        if ts_idx is None:
+            logits = self.head(output_features, input_features)  # (bs, num_ts, max_green_phases)
+        else:
+            logits = self.head(output_features, input_features, ts_idx, subgraph_nodes)
+        #if ts_idx is not None:
+        #    logits = logits[ts_idx].squeeze(0)
 
         return logits
 

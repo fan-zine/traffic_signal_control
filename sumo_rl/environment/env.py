@@ -177,8 +177,8 @@ class SumoEnvironment(gym.Env):
                 for ts in self.ts_ids
             }
 
-        #conn.close()
-        self.sumo = conn
+        conn.close()
+        #self.sumo = conn
 
         self.vehicles = dict()
         self.reward_range = (-float("inf"), float("inf"))

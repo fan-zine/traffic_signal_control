@@ -1,18 +1,28 @@
-from ..models.transformer_model import PolicyNetwork
+from ..models.dcrnn_model import *
 import torch_geometric
 
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import os
 class PGMultiAgent:
-    def __init__(self, ts_indx, edge_index, num_nodes, k, hops, model_args,
-                 device, gamma=0.99, lr=1e-4, models=None):
+    def __init__(self, k, hops, model_args, device, gamma=0.99, lr=1e-4):
+        # global graph structure
+        self.ts_indx = model_args['ts_indx'] # global
+        self.adj_list = model_args['adj_list'] # np.array: [|E|, 2] global
+        self.feat_dim = model_args['feat_dim']
+        self.max_diffusion_step = model_args['max_diffusion_step']
+        self.max_green_phases = model_args['max_green_phases']
+        self.hid_dim = model_args['hid_dim']
+        self.num_nodes = model_args['num_nodes']
+        self.num_rnn_layers = model_args['num_rnn_layers']
+        self.filter_type = model_args['filter_type']
+        self.mask = model_args['mask']  # global
+        self.edge_index = torch.tensor(self.adj_list.T, dtype=torch.long)  # tensor: [2, |E|] global
+
         self.models = {}
         self.optimizers = {}
-        self.ts_indx = ts_indx
-        self.num_nodes = num_nodes
-        self.edge_index = edge_index  # tensor: [2, |E|]
         self.device = device
         self.gamma = gamma
         self.lr = lr
@@ -20,24 +30,70 @@ class PGMultiAgent:
         self.hops = hops
         self.model_args = model_args
         #self.model_type = model_type
-        self.last_k_observations = {ts: [] for ts in ts_indx.keys()}
-        self.no_op = {ts: 0 for ts in ts_indx.keys()}
+        self.last_k_observations = {ts: [] for ts in self.ts_indx.keys()}
+        self.no_op = {ts: 0 for ts in self.ts_indx.keys()}
 
-        if models is None:
-            for ts_id in ts_indx.keys():
-                self.models[ts_id] = PolicyNetwork(model_args).to(device)
-        else:
-            self.models = models
+        for ts_id in self.ts_indx.keys():
+            subgraph_nodes, subgraph_edge_index = self.create_local_graph(ts_id)  # subgraph
+            # subgraph_nodes: node_idx included in the subgraph
+            # subgraph_edge_index: tensor [2, |subE|]
+            ts_idx = self.ts_indx[ts_id]
+            # construct local binary adjacency matrix from subgraph np.array [2, |subE|]
+            adj_mx = self.construct_binary_adj_mat(subgraph_edge_index, num_nodes=subgraph_nodes.size(0))
+            #print("adj_mx", adj_mx)
 
-        for ts_id in ts_indx.keys():
+            encoder = DCRNNEncoder(
+                input_dim=self.feat_dim,  # Density and queue
+                adj_mat=adj_mx,
+                max_diffusion_step=self.max_diffusion_step,
+                hid_dim=self.hid_dim,
+                num_nodes=subgraph_nodes.size(0),
+                num_rnn_layers=self.num_rnn_layers,
+                filter_type="dual_random_walk"
+            ).to(self.device)
+
+            head = SingleTLPhasePredictor(
+                hid_dim=self.hid_dim,
+                input_dim=self.feat_dim,
+                max_green_phases=self.max_green_phases,
+                mask=self.mask  # global
+            ).to(self.device)
+
+            model = TSModel(encoder, head).to(self.device)
+            self.models[ts_id] = model
+
+        for ts_id in self.ts_indx.keys():
             self.optimizers[ts_id] = optim.Adam(self.models[ts_id].parameters(), lr=lr)
+
     def update(self, new_obs):
         for ts in self.last_k_observations.keys():
             self.last_k_observations[ts].append(new_obs[ts])
             if len(self.last_k_observations[ts]) > self.k:
                 self.last_k_observations[ts].pop(0)
 
-    def create_local_graph(self, ts_id, max_lane):
+    def construct_binary_adj_mat(self, subgraph_edge_index, num_nodes):
+        """
+        Construct a binary adjacency matrix from subgraph edge indices.
+
+        Args:
+            subgraph_edge_index (torch.Tensor): Tensor of shape [2, |subE|], representing edges in the subgraph.
+            num_nodes (int): Total number of nodes in the subgraph.
+
+        Returns:
+            np.array: Binary adjacency matrix of shape (num_nodes, num_nodes).
+        """
+        # Initialize an adjacency matrix with zeros
+        adj_mat = np.zeros((num_nodes, num_nodes), dtype=np.float32)
+
+        # Iterate through edges and populate the adjacency matrix
+        for u, v in subgraph_edge_index.T.cpu().numpy():
+            adj_mat[u, v] = 1.0
+
+        adj_mat += np.eye(adj_mat.shape[0])
+
+        return adj_mat
+
+    def create_local_graph(self, ts_id, max_lane=None):
         """
         Create a local graph for the given traffic signal, considering both directions.
 
@@ -46,9 +102,9 @@ class PGMultiAgent:
             max_lane (int): Maximum number of lanes to pad density/queue.
 
         Returns:
-            subgraph_features (torch.Tensor): Features for the local subgraph nodes.
+            (subgraph_features (torch.Tensor): Features for the local subgraph nodes if max_lane is not None).
             subgraph_nodes (torch.Tensor): Indices of nodes in the subgraph.
-            subgraph_edge_index (torch.Tensor): Edge index of the subgraph.
+            subgraph_edge_index (torch.Tensor): Edge index of the subgraph. [2, |subE|]
         """
         node_index = self.ts_indx[ts_id]
 
@@ -73,6 +129,9 @@ class PGMultiAgent:
 
         # Aggregate features for the combined subgraph
         idx_to_ts_id = {v: k for k, v in self.ts_indx.items()}
+
+        if max_lane is None:
+            return subgraph_nodes, subgraph_edge_index
 
         # create placeholder for subgraph_features: shape (num_timesteps, num_nodes, feature_size)
         subgraph_features = torch.zeros((self.k, len(subgraph_nodes), 2*max_lane), dtype=torch.float32)
@@ -141,9 +200,11 @@ class PGMultiAgent:
                     agents_features, subgraph_nodes, subgraph_edge_index = self.create_local_graph(
                         agent_name, max_lanes
                     )
+                    agents_features = agents_features.unsqueeze(1)
+                    initial_hidden_state = torch.zeros((1, subgraph_nodes.size(0) * self.hid_dim), device=self.device)
 
                     model = self.models[agent_name]
-                    logits = model(agents_features, subgraph_edge_index, agent_idx, subgraph_nodes)
+                    logits = model(agents_features, initial_hidden_state, agent_idx, subgraph_nodes).squeeze(0)
 
                     dist = torch.distributions.Categorical(logits=logits)
                     action = dist.sample()
@@ -199,7 +260,6 @@ class PGMultiAgent:
     def save_model(self, output_dir):
         os.makedirs(output_dir, exist_ok=True)
         for agent_name, model in self.models.items():
-            model_path = os.path.join(output_dir, f"{agent_name}_model_v2.pth")
+            model_path = os.path.join(output_dir, f"{agent_name}_model_dcrnn.pth")
             torch.save(model.state_dict(), model_path)
             print(f"Saved model for {agent_name} to {model_path}")
-
