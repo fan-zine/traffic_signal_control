@@ -68,7 +68,7 @@ Below is an organized overview of important scripts and directories:
 ### Example: Training Centralized DCRNN Policy
 
 ```bash
-python experiments/centralised_dcrnn.py
+python experiments/centralised_control.py
 ```
 
 ## Original SUMO-RL Documentation
