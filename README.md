@@ -1,6 +1,6 @@
 # Traffic Signal Control via Multi Agent Graph-based Reinforcement Learning
 
-This repository is based on the `sumo-rl` framework and extended with additional functionalities to handle graph-based representations of traffic networks and apply policy learning methods such as DCRNN or transformer-based models.
+This repository is based on the `sumo-rl` framework and extended with additional functionalities to handle graph-based representations of traffic networks and apply policy learning methods such as centralised/decentralised DCRNN or transformer-based models.
 
 ## Contents
 
