@@ -13,14 +13,21 @@ from sumo_rl.models.dcrnn_model import DCRNNEncoder, TLPhasePredictor, TSModel
 from sumo_rl.agents.pg_single_agent import PGSingleAgent
 
 # Constants
+# 定义交通网络和车辆路径
 NET_FILE = '../sumo_rl/nets/RESCO/grid4x4/grid4x4.net.xml'
 ROUTE_FILE = '../sumo_rl/nets/RESCO/grid4x4/grid4x4_1.rou.xml'
 TRAIN_OUTPUT_CSV = '../results/train_result'
 TEST_OUTPUT_CSV = '../results/test_result'
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+# 交通信号灯数量
 NUM_NODES = None
+# TODO ？
 NUM_VIRTUAL_NODES = 2  # incoming/outgoing nodes
+# 最大车道数
 MAX_LANES = None
+# 最大绿灯相位数
+# 相位数：交通信号灯在一个完整周期内可以切换的不同状态的数量，每个状态称为一个相位。比如一个交通信号灯的总周期为80s，绿灯45s，红灯30s，黄灯5s
+# 相位1：南北方向绿灯，东西方向红灯；相位2：南北方向左转绿灯，东西方向红灯；相位3、4 东西方向同理
 MAX_GREEN_PHASES = None
 LEARNING_RATE = 0.001
 THRESHOLD = 100
@@ -41,6 +48,7 @@ train_env = SumoEnvironment(
 #observations = env.reset()  # [{ts_id: ts_observation_1}, ... ,{ts_id: ts_observation_k}]
 
 # Build graph representation
+# TODO 该看这了
 traffic_signals = [ts for _, ts in train_env.traffic_signals.items()]
 MAX_LANES = max(len(ts.lanes) for ts in traffic_signals)  # max incoming lanes
 MAX_GREEN_PHASES = max(ts.num_green_phases for ts in traffic_signals)
