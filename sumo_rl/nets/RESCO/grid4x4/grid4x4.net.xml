@@ -37,10 +37,12 @@
 -->
 
 <net version="1.9" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
-
+    <!--网络的位置信息-->
     <location netOffset="0.00,0.00" convBoundary="0.00,0.00,1500.00,1500.00" origBoundary="0.00,0.00,1500.00,1500.00" projParameter="!"/>
 
+    <!--内部车道-->
     <edge id=":A0_0" function="internal">
+        <!--车道id、序号、默认限速、长度、车道形状-->
         <lane id=":A0_0_0" index="0" speed="6.51" length="9.03" shape="292.00,313.60 291.65,311.15 290.60,309.40 288.85,308.35 286.40,308.00"/>
         <lane id=":A0_0_1" index="1" speed="7.33" length="11.73" shape="292.00,313.60 291.65,309.75 290.60,307.00 288.85,305.35 286.40,304.80"/>
         <lane id=":A0_0_2" index="2" speed="8.10" length="14.57" shape="292.00,313.60 291.65,308.35 290.60,304.60 288.85,302.35 286.40,301.60"/>
@@ -1978,7 +1980,10 @@
         <lane id="top3D3_2" index="2" speed="13.89" length="286.40" shape="1198.40,1500.00 1198.40,1213.60"/>
     </edge>
 
+    <!--一个信号灯的相位配置，static表示不随交通流变化-->
     <tlLogic id="A0" type="static" programID="0" offset="0">
+        <!--duration:该相位的持续时间，state:信号灯状态字符串，每个字符对应一个车道信号灯的颜色，s:转向专用绿灯-->
+        <!--南北方向绿灯亮起，持续10s-->
         <phase duration="10"  state="GGGGGGrrrsssrrrrrrGGGGGGrrrsssrrrrrr"/>    <!-- S-S, N-N -->
         <phase duration="3"   state="yyyyyyrrrsssrrrrrryyyyyyrrrsssrrrrrr"/>
         <phase duration="10"  state="sssrrrGGGsssrrrrrrsssrrrGGGsssrrrrrr"/>    <!-- S-E, N-W -->
